@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HD BOX – فروشگاه</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand" onclick="location.reload()">📦 HD BOX</div>
+
+    <div class="search">
+      <input id="searchInput" type="search" placeholder="جستجوی محصول…" />
+      <button id="searchBtn">جستجو</button>
+    </div>
+
+    <div class="actions">
+      <button id="signinBtn" class="ghost">ورود/ثبت‌نام</button>
+      <button id="cartBtn">🛒 سبد <span id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <!-- Subnav -->
+  <nav class="subnav" id="catsBar">
+    <!-- دکمه‌های دسته‌بندی با JS پر می‌شود -->
+  </nav>
+
+  <!-- Main -->
+  <main class="container">
+    <aside class="filters">
+      <h3>فیلتر قیمت</h3>
+      <label>حداکثر: <span id="maxPriceLabel">—</span> تومان</label>
+      <input id="maxPrice" type="range" min="0" max="100000000" value="100000000" />
+      <button id="clearFilters" class="ghost small">پاک‌سازی فیلترها</button>
+    </aside>
+
+    <section class="grid" id="productsGrid">
+      <!-- کارت‌های محصول با JS رندر می‌شود -->
+    </section>
+  </main>
+
+  <!-- Cart Drawer -->
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-head">
+      <h3>سبد خرید</h3>
+      <button id="closeCart" class="ghost">✕</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-foot">
+      <div class="row">
+        <span>جمع کل:</span>
+        <strong id="cartTotal">0</strong><span> تومان</span>
+      </div>
+      <button id="checkout" class="primary">ادامه فرآیند خرید</button>
+    </div>
+  </aside>
+  <div id="backdrop" class="backdrop"></div>
+
+  <footer class="footer">
+    © 2025 HD BOX — نسخه نمایشی بدون سرور
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

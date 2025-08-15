@@ -1,0 +1,176 @@
+/* ====== داده‌های نمونه محصول ====== */
+const PRODUCTS = [
+  {id:1,title:"Samsung Galaxy S23", price:30000000, img:"https://picsum.photos/seed/s23/600/400", cat:"سامسونگ", tag:"جدید"},
+  {id:2,title:"iPhone 14 Pro",     price:50000000, img:"https://picsum.photos/seed/iphone14/600/400", cat:"اپل", tag:"پرفروش"},
+  {id:3,title:"Xiaomi 13 Ultra",   price:20000000, img:"https://picsum.photos/seed/x13/600/400", cat:"شیائومی", tag:"اقتصادی"},
+  {id:4,title:"Huawei Nova Y90",   price: 9000000, img:"https://picsum.photos/seed/y90/600/400",   cat:"هوآوی", tag:"اقتصادی"},
+  {id:5,title:"Samsung A55",       price:16000000, img:"https://picsum.photos/seed/a55/600/400",   cat:"سامسونگ", tag:"جدید"},
+  {id:6,title:"iPhone 13",         price:35000000, img:"https://picsum.photos/seed/iph13/600/400", cat:"اپل", tag:"محبوب"},
+];
+
+/* ====== حالت برنامه ====== */
+const state = {
+  cat: "همه",
+  q: "",
+  maxPrice: 100000000,
+  cart: JSON.parse(localStorage.getItem("cart")||"{}") // {id: qty}
+};
+
+const els = {
+  grid: document.getElementById("productsGrid"),
+  catsBar: document.getElementById("catsBar"),
+  searchInput: document.getElementById("searchInput"),
+  searchBtn: document.getElementById("searchBtn"),
+  maxPrice: document.getElementById("maxPrice"),
+  maxPriceLabel: document.getElementById("maxPriceLabel"),
+  clearFilters: document.getElementById("clearFilters"),
+  cartBtn: document.getElementById("cartBtn"),
+  cartDrawer: document.getElementById("cartDrawer"),
+  cartItems: document.getElementById("cartItems"),
+  cartTotal: document.getElementById("cartTotal"),
+  cartCount: document.getElementById("cartCount"),
+  closeCart: document.getElementById("closeCart"),
+  backdrop: document.getElementById("backdrop"),
+  checkout: document.getElementById("checkout"),
+};
+
+init();
+
+function init(){
+  renderCats();
+  bindHeader();
+  render();
+  renderCart();
+}
+
+/* ====== رندر دسته‌بندی‌ها ====== */
+function renderCats(){
+  const cats = ["همه", ...new Set(PRODUCTS.map(p=>p.cat))];
+  els.catsBar.innerHTML = cats.map(c=>`<button data-cat="${c}" class="${c===state.cat?'active':''}">${c}</button>`).join("");
+  els.catsBar.querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      state.cat = b.dataset.cat;
+      els.catsBar.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      render();
+    });
+  });
+}
+
+/* ====== رویدادهای هدر/فیلتر ====== */
+function bindHeader(){
+  els.searchBtn.addEventListener("click", ()=>{ state.q = els.searchInput.value.trim(); render(); });
+  els.searchInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ state.q = els.searchInput.value.trim(); render(); }});
+  els.maxPrice.addEventListener("input", ()=>{
+    state.maxPrice = +els.maxPrice.value;
+    els.maxPriceLabel.textContent = toMoney(state.maxPrice);
+    render();
+  });
+  els.maxPrice.value = state.maxPrice;
+  els.maxPriceLabel.textContent = "بی‌نهایت";
+  els.clearFilters.addEventListener("click", ()=>{
+    state.cat="همه"; state.q=""; state.maxPrice=100000000;
+    els.searchInput.value=""; els.maxPrice.value=state.maxPrice; els.maxPriceLabel.textContent="بی‌نهایت";
+    renderCats(); render();
+  });
+
+  // Cart open/close
+  [els.cartBtn, els.backdrop].forEach(el=>el.addEventListener("click", toggleCart));
+  els.closeCart.addEventListener("click", toggleCart);
+  els.checkout.addEventListener("click", ()=>{
+    alert("این نسخه نمایشی است. برای پرداخت واقعی نیاز به بک‌اند/درگاه دارید.");
+  });
+}
+
+function toggleCart(){
+  const open = !els.cartDrawer.classList.contains("open");
+  els.cartDrawer.classList.toggle("open", open);
+  els.backdrop.classList.toggle("show", open);
+  els.cartDrawer.setAttribute("aria-hidden", String(!open));
+}
+
+/* ====== رندر محصولات ====== */
+function render(){
+  const list = PRODUCTS
+    .filter(p=> state.cat==="همه" ? true : p.cat===state.cat)
+    .filter(p=> p.price <= state.maxPrice)
+    .filter(p=> state.q ? (p.title.toLowerCase().includes(state.q.toLowerCase())) : true);
+
+  els.grid.innerHTML = list.map(p=>cardHtml(p)).join("");
+  els.grid.querySelectorAll("[data-add]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      addToCart(+btn.dataset.add);
+    });
+  });
+}
+
+function cardHtml(p){
+  return `
+  <article class="card">
+    <img src="${p.img}" alt="${p.title}">
+    <div class="row">
+      <h4>${p.title}</h4>
+      <span class="tag">${p.tag}</span>
+    </div>
+    <div class="row">
+      <div><span class="price">${toMoney(p.price)}</span> <span class="muted">تومان</span></div>
+      <button class="add" data-add="${p.id}">افزودن</button>
+    </div>
+  </article>`;
+}
+
+/* ====== سبد خرید ====== */
+function addToCart(id){
+  state.cart[id] = (state.cart[id]||0)+1;
+  persistCart(); renderCart();
+}
+
+function removeFromCart(id){
+  if(!state.cart[id]) return;
+  state.cart[id]--;
+  if(state.cart[id]<=0) delete state.cart[id];
+  persistCart(); renderCart();
+}
+
+function deleteFromCart(id){
+  delete state.cart[id];
+  persistCart(); renderCart();
+}
+
+function persistCart(){ localStorage.setItem("cart", JSON.stringify(state.cart)); }
+
+function renderCart(){
+  const entries = Object.entries(state.cart); // [[id, qty], ...]
+  let total = 0;
+  const rows = entries.map(([id,qty])=>{
+    const p = PRODUCTS.find(x=>x.id==id);
+    const line = p.price*qty; total += line;
+    return `
+      <div class="item">
+        <img src="${p.img}" alt="${p.title}">
+        <div>
+          <div class="ttl">${p.title}</div>
+          <div class="muted">${toMoney(p.price)} تومان</div>
+          <div class="qty">
+            <button aria-label="کم کردن" data-dec="${p.id}">−</button>
+            <span>${qty}</span>
+            <button aria-label="افزودن" data-inc="${p.id}">+</button>
+            <button class="ghost" data-del="${p.id}" style="margin-right:auto">حذف</button>
+          </div>
+        </div>
+        <div><strong>${toMoney(line)}</strong> <span class="muted">تومان</span></div>
+      </div>`;
+  }).join("");
+
+  els.cartItems.innerHTML = rows || `<div class="muted">سبد خالی است.</div>`;
+  els.cartTotal.textContent = toMoney(total);
+  els.cartCount.textContent = entries.reduce((s,[,q])=>s+q,0);
+
+  // bind qty buttons
+  els.cartItems.querySelectorAll("[data-inc]").forEach(b=>b.addEventListener("click",()=>addToCart(+b.dataset.inc)));
+  els.cartItems.querySelectorAll("[data-dec]").forEach(b=>b.addEventListener("click",()=>removeFromCart(+b.dataset.dec)));
+  els.cartItems.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>deleteFromCart(+b.dataset.del)));
+}
+
+/* ====== کمکی ====== */
+function toMoney(n){ return Number(n).toLocaleString("fa-IR"); }
